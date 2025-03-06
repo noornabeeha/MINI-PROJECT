@@ -16,3 +16,6 @@ Enhances design and branding strategies
 Helps in creating accessible designs
 Affects mood, perception, and emotions
 Important in industrial safety and environmental planning
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
