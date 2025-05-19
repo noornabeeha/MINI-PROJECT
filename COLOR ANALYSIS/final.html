@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Analysis</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: url('https://i.pinimg.com/736x/53/37/5e/53375ef247e7f303f6b26dd327389c23.jpg') no-repeat center center/cover;
+        }
+        .palette {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+    min-height: 60px; /* Ensures it has space even if empty */
+    flex-wrap: wrap; /* Allows colors to wrap if needed */
+}
+
+.color-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 5px;
+    border: 1px solid #000; /* Add border to make sure they are visible */
+}
+
+        .container {
+            display: flex;
+            width: 80%;
+            max-width: 1200px;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 30px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .tools-container {
+            width: 55%;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .result-container {
+    width: 40%;
+    padding: 20px;
+    min-height: 250px; /* Increase space if needed */
+    overflow: auto; /* Ensures content stays visible */
+}
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: black;
+        }
+        video, canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        canvas {
+            display: none;
+        }
+        .options {
+            margin-top: 15px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        button, .custom-file-input {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: rgb(242, 212, 240);
+            color: black;
+            font-weight: bold;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+        button:hover, .custom-file-input:hover {
+            background-color: rgb(220, 190, 220);
+        }
+        .custom-file-input {
+            display: inline-block;
+            text-align: center;
+        }
+        #uploadImage {
+            display: none;
+        }
+        #colorPickerButton {
+            display: none;
+            padding: 12px 20px;
+            background-color: #feeea4;
+            color: black;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        #colorPickerButton:hover {
+            background-color: rgb(220, 190, 220);
+        }
+        #pickedColor {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+        }
+        #colorPickerButton img {
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+        }
+        #seasonResult {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #4a4a4a;
+        }
+        #detectDominantColor {
+    padding: 12px 20px;
+    background-color: #c9f7ff;
+    color: black;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+#detectDominantColor:hover {
+    background-color: #b2e0f0;
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tools-container">
+            <div class="video-container">
+                <video id="video" autoplay></video>
+                <canvas id="imageCanvas"></canvas>
+            </div>
+            <div class="options">
+                <button id="startCamera">Turn on Camera</button>
+                <button id="snapPhoto">Snap</button>
+                <label for="uploadImage" class="custom-file-input">Choose Image</label>
+                <input type="file" id="uploadImage" accept="image/*">
+                <button id="colorPickerButton" style="display: none;">Pick Color</button>
+                <button id="detectDominantColor">Detect Dominant Face Color</button>
+
+            </div>
+            <p id="pickedColor">You have picked: <span id="colorHex">None</span></p>
+        </div>
+
+  <div id="userInfo" style="margin-top: 20px;">
+    <h3>Tell us a bit more:</h3>
+
+    <label>Eye Color:</label><br>
+    <label><input type="radio" name="eyeColor" value="blue"> Blue</label><br>
+    <label><input type="radio" name="eyeColor" value="green"> Green</label><br>
+    <label><input type="radio" name="eyeColor" value="hazel"> Hazel</label><br>
+    <label><input type="radio" name="eyeColor" value="brown"> Brown</label><br>
+    <label><input type="radio" name="eyeColor" value="gray"> Gray</label><br><br>
+
+    <label>What color do your wrist veins appear?</label><br>
+    <label><input type="radio" name="veinColor" value="blue"> Blue</label><br>
+    <label><input type="radio" name="veinColor" value="green"> Green</label><br>
+    <label><input type="radio" name="veinColor" value="purple"> Purple</label><br>
+    <label><input type="radio" name="veinColor" value="mixed"> Mixed</label><br>
+</div>
+
+
+
+        <!-- Right Side: Season Result -->
+        <div class="result-container">
+            <h2>Seasonal Color Analysis</h2>
+            <p id="seasonResult">Pick a color to see your season!</p>
+            <div class="palette" id="colorPalette"></div> <!-- Added this line -->
+        </div>
+        
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        const startCamera = document.getElementById('startCamera');
+        const snapPhoto = document.getElementById('snapPhoto');
+        const uploadImage = document.getElementById('uploadImage');
+        const colorPickerButton = document.getElementById('colorPickerButton');
+        const colorHex = document.getElementById('colorHex');
+        const seasonResult = document.getElementById('seasonResult');
+
+        let stream = null;
+        let imageLoaded = false;
+
+        startCamera.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                video.style.display = 'block';
+                canvas.style.display = 'none';
+            } catch (error) {
+                alert('Camera access denied or unavailable.');
+                console.error('Error accessing webcam:', error);
+            }
+        });
+
+        snapPhoto.addEventListener('click', () => {
+            if (video.style.display === 'block') {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                video.style.display = 'none';
+                canvas.style.display = 'block';
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                imageLoaded = true;
+                colorPickerButton.style.display = 'inline-block';
+            }
+        });
+
+        uploadImage.addEventListener('change', event => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        video.style.display = 'none';
+                        canvas.style.display = 'block';
+                        imageLoaded = true;
+                        colorPickerButton.style.display = 'inline-block';
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        colorPickerButton.addEventListener('click', () => {
+            if (!window.EyeDropper) {
+                alert('Your browser does not support the EyeDropper API.');
+                return;
+            }
+            const eyeDropper = new EyeDropper();
+            eyeDropper.open()
+                .then(result => {
+                    colorHex.innerHTML = `<b>${result.sRGBHex}</b>`;
+                    determineSeason(result.sRGBHex);
+                })
+                .catch(error => {
+                    console.error('Error picking color:', error);
+                });
+        });
+        document.getElementById("detectDominantColor").addEventListener("click", () => {
+    if (!imageLoaded) {
+        alert("Please upload an image or take a photo first.");
+        return;
+    }
+
+    // Define a central region (adjust if needed)
+    const regionSize = 50;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const startX = Math.max(0, centerX - regionSize / 2);
+    const startY = Math.max(0, centerY - regionSize / 2);
+
+    const imageData = ctx.getImageData(startX, startY, regionSize, regionSize);
+    const data = imageData.data;
+    let r = 0, g = 0, b = 0, count = 0;
+
+    for (let i = 0; i < data.length; i += 4) {
+        r += data[i];
+        g += data[i + 1];
+        b += data[i + 2];
+        count++;
+    }
+
+    r = Math.round(r / count);
+    g = Math.round(g / count);
+    b = Math.round(b / count);
+
+    const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+    colorHex.innerHTML = `<b>${hex}</b>`;
+    determineSeason(hex);
+});
+
+       function determineSeason(hex) {
+    const r = parseInt(hex.substr(1, 2), 16);
+    const g = parseInt(hex.substr(3, 2), 16);
+    const b = parseInt(hex.substr(5, 2), 16);
+    const brightness = (r + g + b) / 3;
+    const warmCool = r - b;
+    const contrast = Math.abs(r - g) + Math.abs(g - b) + Math.abs(b - r);
+
+    const traits = getUserTraits();
+    let undertone = "";
+
+    switch (traits.veinColor) {
+        case "blue":
+        case "purple":
+            undertone = "cool";
+            break;
+        case "green":
+            undertone = "warm";
+            break;
+        case "mixed":
+            undertone = "neutral";
+            break;
+        default:
+            undertone = warmCool > 0 ? "warm" : "cool";
+    }
+
+    const isLightEyes = ["blue", "green", "gray"].includes(traits.eyeColor);
+    const isDarkEyes = ["brown", "hazel"].includes(traits.eyeColor);
+
+    let seasonType = "";
+
+    if (undertone === "warm") {
+        if (brightness > 180) {
+            seasonType = contrast > 50 ? "Deep Spring" : "Soft Spring";
+        } else {
+            seasonType = contrast > 50 ? "Deep Autumn" : "Soft Autumn";
+        }
+    } else if (undertone === "cool") {
+        if (brightness > 180) {
+            seasonType = contrast > 50 ? "Deep Summer" : "Soft Summer";
+        } else {
+            seasonType = contrast > 50 ? "Deep Winter" : "Soft Winter";
+        }
+    } else {
+        seasonType = contrast > 60 ? "Deep Autumn" : "Soft Summer";
+    }
+
+    if (isLightEyes && seasonType.includes("Autumn")) {
+        seasonType = seasonType.replace("Autumn", "Spring");
+    } else if (isDarkEyes && seasonType.includes("Summer")) {
+        seasonType = seasonType.replace("Summer", "Winter");
+    }
+
+    document.getElementById("seasonResult").innerHTML = `Your season is: <b>${seasonType}</b>`;
+    displayPalette(seasonType);
+}
+
+function getUserTraits() {
+    const eyeColor = document.querySelector('input[name="eyeColor"]:checked')?.value || '';
+    const veinColor = document.querySelector('input[name="veinColor"]:checked')?.value || '';
+
+    console.log("Selected eye color:", eyeColor);
+    console.log("Selected vein color:", veinColor);
+
+    return {
+        eyeColor,
+        veinColor
+    };
+}
+
+
+
+        function displayPalette(season) {
+            const palettes = {
+                "Deep Spring": ["#FF6F61", "#FFA07A", "#FFD700", "#008000", "#006400"],
+                "Soft Spring": ["#F4A460", "#FFDAB9", "#E6E6FA", "#B0C4DE", "#98FB98"],
+                "Deep Autumn": ["#8B4513", "#D2691E", "#CD853F", "#556B2F", "#6B8E23"],
+                "Soft Autumn": ["#DEB887", "#DAA520", "#BC8F8F", "#D8BFD8", "#C0C0C0"],
+                "Deep Summer": ["#4682B4", "#5F9EA0", "#8A2BE2", "#4B0082", "#7B68EE"],
+                "Soft Summer": ["#D3D3D3", "#C0C0C0", "#A9A9A9", "#708090", "#778899"],
+                "Deep Winter": ["#000080", "#800000", "#8B0000", "#2F4F4F", "#483D8B"],
+                "Soft Winter": ["#708090", "#A9A9A9", "#C0C0C0", "#DCDCDC", "#F5F5F5"]
+            };
+            
+            const paletteContainer = document.getElementById("colorPalette");
+            paletteContainer.innerHTML = "";
+            palettes[season].forEach(color => {
+                const div = document.createElement("div");
+                div.className = "color-box";
+                div.style.backgroundColor = color;
+                paletteContainer.appendChild(div);
+            });
+        }
+
+        determineSeason("#FF5733");
+
+      
+    </script>
+</body>
+</html>
+
